@@ -11,7 +11,7 @@ YMIN, YMAX = 0, 15
 FLOORSIZE = XMAX * YMAX
 
 def xy(x, y)
-  x * y
+  y * XMAX + x
 end
 
 def boundsok(x, y)
