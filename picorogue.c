@@ -7,7 +7,8 @@
 
 // C has no builtin way of doing this and we're not using ncurses (yet)
 // this only works on *nix
-#define CLS() system("clear")
+#define clearscreen() system("clear")
+#define randint(n) (rand() % n)
 
 // ASCII tiles
 #define T_CLEAR '.'
@@ -34,8 +35,8 @@ typedef enum
 #define YMAX 15
 #define FLOORSIZE (XMAX * YMAX)
 // helpers for translating 2d coords to flat 1d
-#define XY(x, y) (y * XMAX + x)
-#define BOUNDSOK(x, y) (x >= XMIN && x < XMAX && y >= YMIN && y < YMAX)
+#define xy(x, y) (y * XMAX + x)
+#define boundsok(x, y) (x >= XMIN && x < XMAX && y >= YMIN && y < YMAX)
 
 typedef struct
 {
@@ -74,6 +75,38 @@ game G = {
     // won
     PLAYING};
 
+
+// fill the whole floor with clear tiles
+void digfloor_clear() {
+    memset(&G.f.tiles, TILE_CLEAR, FLOORSIZE * sizeof(tile));
+}
+
+// simple four-quadrant layout
+void digfloor_quad() {
+    int row, col;
+    digfloor_clear();
+
+    // pick a row that doesn't intersect player or stairs
+    do {
+        row = randint(YMAX);
+    } while (row == G.py || row == G.f.sy || row == 0 || row == YMAX - 1);
+    // and a column, same deal
+    do {
+        col = randint(XMAX);
+    } while (col == G.px || col == G.f.sx || col == 0 || col == XMAX - 1);
+    // fill in the row and column
+    for(int ix = 0; ix < XMAX; ix++) {
+        G.f.tiles[xy(ix, row)] = TILE_BLOCKED;
+    }
+    for(int iy = 0; iy < YMAX; iy++) {
+        G.f.tiles[xy(col, iy)] = TILE_BLOCKED;
+    }
+    // open up doors in 3 walls
+    G.f.tiles[xy(randint(col), row)] = TILE_CLEAR;
+    G.f.tiles[xy(col + 1 + randint(XMAX - col - 1), row)] = TILE_CLEAR;
+    G.f.tiles[xy(col, randint(row))] = TILE_CLEAR;
+}
+
 // creates a new floor and places the PC on it
 void newfloor()
 {
@@ -82,19 +115,19 @@ void newfloor()
 
     // we're on a new floor.
     G.f.n++;
-    // fill the whole floor with clear tiles
-    memset(&G.f.tiles, TILE_CLEAR, FLOORSIZE);
+
     // find a random place to start the PC
-    G.px = rand() % XMAX;
-    G.py = rand() % YMAX;
+    G.px = randint(XMAX);
+    G.py = randint(YMAX);
     // find a random place to place the stairs, not on the PC
     // or in line with the PC
     do
     {
-        G.f.sx = rand() % XMAX;
-        G.f.sy = rand() % YMAX;
+        G.f.sx = randint(XMAX);
+        G.f.sy = randint(YMAX);
     } while (G.f.sx == G.px || G.f.sy == G.py);
-    // TODO: place some walls
+
+    digfloor_quad();
 }
 
 // clear the screen, print out the current floor
@@ -104,7 +137,7 @@ void draw()
     char line[XMAX + 1];
     memset(line, 0, XMAX + 1);
 
-    CLS();
+    clearscreen();
 
     // the use of printf here is a stopgap until we use ncurses
     printf("* PICOROGUE *\n");
@@ -122,7 +155,7 @@ void draw()
             {
                 line[ix] = T_STAIRS;
             }
-            else if (G.f.tiles[XY(ix, iy)] == TILE_BLOCKED)
+            else if (G.f.tiles[xy(ix, iy)] == TILE_BLOCKED)
             {
                 line[ix] = T_BLOCKED;
             }
@@ -170,7 +203,7 @@ void movepc(dir d)
         cx++;
     }
 
-    if (BOUNDSOK(cx, cy) && G.f.tiles[XY(cx, cy)] == TILE_CLEAR)
+    if (boundsok(cx, cy) && G.f.tiles[xy(cx, cy)] == TILE_CLEAR)
     {
         // it's an OK place to stand
         G.px = cx;
@@ -240,7 +273,7 @@ void turn()
 // inform the player as to how they ended the game and in how many turnns
 void gameover()
 {
-    CLS();
+    clearscreen();
 
     printf("Farewell, adventurer!\n\n");
     printf("You ");

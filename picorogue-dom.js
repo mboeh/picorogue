@@ -35,17 +35,45 @@ const G = {
   state: PLAYING,
 };
 
-const rand = (i) => Math.floor(Math.random() * i);
+const randint = (i) => Math.floor(Math.random() * i);
+
+const digfloor_clear = () => {
+  G.f.tiles = new Array(FLOORSIZE).fill(TILE_CLEAR, 0, FLOORSIZE - 1);
+};
+
+const digfloor_quad = () => {
+  digfloor_clear();
+
+  // pick a row that doesn't intersect player or stairs
+  do {
+      row = randint(YMAX);
+  } while (row == G.py || row == G.f.sy || row == 0 || row == YMAX - 1);
+  // and a column, same deal
+  do {
+      col = randint(XMAX);
+  } while (col == G.px || col == G.f.sx || col == 0 || col == XMAX - 1);
+  // fill in the row and column
+  for(let ix = 0; ix < XMAX; ix++) {
+      G.f.tiles[xy(ix, row)] = TILE_BLOCKED;
+  }
+  for(let iy = 0; iy < YMAX; iy++) {
+      G.f.tiles[xy(col, iy)] = TILE_BLOCKED;
+  }
+  // open up doors in 3 walls
+  G.f.tiles[xy(randint(col), row)] = TILE_CLEAR;
+  G.f.tiles[xy(col + 1 + randint(XMAX - col - 1), row)] = TILE_CLEAR;
+  G.f.tiles[xy(col, randint(row))] = TILE_CLEAR;
+};
 
 const newfloor = () => {
   G.f.n++;
-  G.f.tiles = new Array(FLOORSIZE).fill(TILE_CLEAR, 0, FLOORSIZE - 1);
-  G.px = rand(XMAX);
-  G.py = rand(YMAX);
+  G.px = randint(XMAX);
+  G.py = randint(YMAX);
   do {
-    G.f.sx = rand(XMAX);
-    G.f.sy = rand(YMAX);
+    G.f.sx = randint(XMAX);
+    G.f.sy = randint(YMAX);
   } while (G.px == G.f.sx || G.py == G.f.sy);
+  digfloor_quad();
 };
 
 const draw = () => {
