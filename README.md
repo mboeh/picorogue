@@ -9,23 +9,26 @@ Following are my original notes for this idea. The current implementation does n
 * The Game consists of a tower of $FLOORS floors, numbered 1 through $FLOORS.
 * Each floor consists of a $XMAXx$YMAX tile grid.
 * Each tile is either blocked or clear.
-* All clear tiles are connected -- there are no isolated rooms.
-* Clear tiles must be directly adjacent (to the north, east, south, or west) to be considered connected -- no diagonals.
-* The placement of tiles on each floor is randomized.
-* Between 30-70% of tiles should be clear.
-* On one clear tile on each floor, an up staircase should be placed.
+* On one tile on each floor, an up staircase should be placed.
+* Blocked tiles are placed on the floor according to a 'digging algorithm', subject to the following constraints:
+    - The tile the PC is placed on may not be blocked.
+    - The tile the staircase is placed on may not be blocked.
+    - It must be possible for the PC to move from the start location to the staircase.
 
 ## Gameplay
 
-* The player character (PC) is placed in a random clear tile on floor 1.
-    * If the tile chosen happens to be on the up staircase, pick a new tile.
+* The player character (PC) is placed in a random tile on the floor.
+* The up stairs are placed on a random tile on the floor.
+    * If the tile chosen happens to be in the same row or column as the PC, pick a new tile.
 * Gameplay is divided into turns.
 * Each turn starts with the player choosing an action and completes with the resolution of that action.
 * The following actions are available:
     * Move (north, east, south, west): Attempt to move one tile in a direction.
         * Moving succeeds if the destination tile is clear, and fails if it is blocked.
+        * Attempting to move beyond the bounds of the map fails.
     * Climb: Attempt to ascend stairs.
         * Climbing succeeds if the current tile contains a staircase, and fails otherwise.
+* The turn counter is incremented regardless of whether an action succeeds or fails.
 * When the PC climbs stairs, the next floor up is loaded and the PC is placed on a random tile as stated above.
 * If the PC climbs stairs on floor 10, the player has won the game.
     * The player is presented with a message indicating their success and the number of turns it took to win.
@@ -34,7 +37,7 @@ Following are my original notes for this idea. The current implementation does n
 
 * The game world is displayed using ASCII characters.
     * A blocked tile is '#'
-    * A clear tile is ' '
+    * A clear tile is '.'
     * The PC is '@'
     * The up staircase is '<'
 * Actions are issued using the keyboard.
