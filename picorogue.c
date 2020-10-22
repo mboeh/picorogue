@@ -72,7 +72,7 @@ game G = {
     // floor
     {0, 0, 0, {0}},
     // won
-    false};
+    PLAYING};
 
 // creates a new floor and places the PC on it
 void newfloor()
@@ -214,7 +214,6 @@ void turn()
 
     switch (cmd)
     {
-    case 'q':
     case 'Q':
         G.state = QUIT;
         break;
