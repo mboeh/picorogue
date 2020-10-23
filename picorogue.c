@@ -1,3 +1,4 @@
+//// DEPENDENCIES
 #include <assert.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -5,27 +6,22 @@
 #include <string.h>
 #include <time.h>
 
+//// UTILITY FUNCTIONS
 // C has no builtin way of doing this and we're not using ncurses (yet)
 // this only works on *nix
 #define clearscreen() system("clear")
 #define randint(n) (rand() % n)
 
-// ASCII tiles
-#define T_CLEAR '.'
-#define T_BLOCKED '#'
+//// TILE GRAPHICS
+#define ASCII_CLEAR '.'
+#define ASCII_BLOCKED '#'
 // P(layer) C(haracter).
 // "Who do you think you are, War?" - NetHack
-#define T_PC '@'
+#define ASCII_PC '@'
 // only one way out of this mess
-#define T_STAIRS '<'
+#define ASCII_STAIRS '<'
 
-// only two types of terrain, clear and blocked, aka floors and walls
-typedef enum
-{
-    TILE_CLEAR,
-    TILE_BLOCKED
-} tile;
-
+//// GRID PARAMETERS & HELPERS
 // if you climb the stairs on this floor, you've won the game
 #define TOPFLOOR 10
 // bounds for the grid, which is stored as a 1d array
@@ -37,6 +33,30 @@ typedef enum
 // helpers for translating 2d coords to flat 1d
 #define xy(x, y) (y * XMAX + x)
 #define boundsok(x, y) (x >= XMIN && x < XMAX && y >= YMIN && y < YMAX)
+
+//// DATA TYPES
+// only two types of terrain, clear and blocked, aka floors and walls
+typedef enum
+{
+    TILE_CLEAR,
+    TILE_BLOCKED
+} tile;
+
+// compass directions
+typedef enum
+{
+    N,
+    E,
+    S,
+    W
+} dir;
+
+typedef enum
+{
+    PLAYING,
+    QUIT,
+    WON
+} game_state;
 
 typedef struct
 {
@@ -55,14 +75,10 @@ typedef struct
     // current location of the PC
     int px, py;
     floor f;
-    enum
-    {
-        PLAYING,
-        QUIT,
-        WON
-    } state;
+    game_state state;
 } game;
 
+//// GLOBAL STATE
 // newfloor() has to be called to properly initialize this
 game G = {
     // turns
@@ -75,30 +91,36 @@ game G = {
     // won
     PLAYING};
 
-
+//// GAME LOGIC - FLOOR GENERATION
 // fill the whole floor with clear tiles
-void digfloor_clear() {
+void digfloor_clear()
+{
     memset(&G.f.tiles, TILE_CLEAR, FLOORSIZE * sizeof(tile));
 }
 
 // simple four-quadrant layout
-void digfloor_quad() {
+void digfloor_quad()
+{
     int row, col;
     digfloor_clear();
 
     // pick a row that doesn't intersect player or stairs
-    do {
+    do
+    {
         row = randint(YMAX);
     } while (row == G.py || row == G.f.sy || row == 0 || row == YMAX - 1);
     // and a column, same deal
-    do {
+    do
+    {
         col = randint(XMAX);
     } while (col == G.px || col == G.f.sx || col == 0 || col == XMAX - 1);
     // fill in the row and column
-    for(int ix = 0; ix < XMAX; ix++) {
+    for (int ix = 0; ix < XMAX; ix++)
+    {
         G.f.tiles[xy(ix, row)] = TILE_BLOCKED;
     }
-    for(int iy = 0; iy < YMAX; iy++) {
+    for (int iy = 0; iy < YMAX; iy++)
+    {
         G.f.tiles[xy(col, iy)] = TILE_BLOCKED;
     }
     // open up doors in 3 walls
@@ -113,12 +135,13 @@ void newfloor()
     // winning the game is handled in climb()
     assert(G.f.n < TOPFLOOR);
 
-    // we're on a new floor.
+    // we're on a new floor
     G.f.n++;
 
     // find a random place to start the PC
     G.px = randint(XMAX);
     G.py = randint(YMAX);
+
     // find a random place to place the stairs, not on the PC
     // or in line with the PC
     do
@@ -130,6 +153,7 @@ void newfloor()
     digfloor_quad();
 }
 
+//// GAME LOGIC - RENDERING
 // clear the screen, print out the current floor
 void draw()
 {
@@ -149,19 +173,19 @@ void draw()
             // the PC standing on stairs covers it
             if (ix == G.px && iy == G.py)
             {
-                line[ix] = T_PC;
+                line[ix] = ASCII_PC;
             }
             else if (ix == G.f.sx && iy == G.f.sy)
             {
-                line[ix] = T_STAIRS;
+                line[ix] = ASCII_STAIRS;
             }
             else if (G.f.tiles[xy(ix, iy)] == TILE_BLOCKED)
             {
-                line[ix] = T_BLOCKED;
+                line[ix] = ASCII_BLOCKED;
             }
             else
             {
-                line[ix] = T_CLEAR;
+                line[ix] = ASCII_CLEAR;
             }
         }
         // print out the next line of the map
@@ -169,15 +193,7 @@ void draw()
     }
 }
 
-// compass directions
-typedef enum
-{
-    N,
-    E,
-    S,
-    W
-} dir;
-
+//// GAME LOGIC - ACTIONS
 // attempt to move the PC in a compass direction
 // will fail if the destination is off the grid or blocked
 // will always increment the turn counter
@@ -270,7 +286,8 @@ void turn()
     }
 }
 
-// inform the player as to how they ended the game and in how many turnns
+//// GAME LOGIC - STARTING AND ENDING
+// inform the player as to how they ended the game and in how many turns
 void gameover()
 {
     clearscreen();
