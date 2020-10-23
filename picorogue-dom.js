@@ -93,7 +93,7 @@ const digfloor_quad = () => {
   // open up doors in 3 walls
   G.f.tiles[xy(randint(col), row)] = TILE.clear;
   G.f.tiles[xy(col + 1 + randint(XMAX - col - 1), row)] = TILE.clear;
-  G.f.tiles[xy(col, randint(row))] = TILE.blocked;
+  G.f.tiles[xy(col, randint(row))] = TILE.clear;
 };
 
 // creates a new floor and places the PC on it
