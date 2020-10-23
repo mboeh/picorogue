@@ -79,6 +79,36 @@ G = Struct.new(
 )
 
 ## GAME LOGIC - FLOOR GENERATION
+# fill the whole floor with clear tiles
+def digfloor_clear
+  G.f.tiles.map! { Tile::CLEAR }
+end
+
+# simple four-quadrant layout
+def digfloor_quad
+  digfloor_clear
+
+  # pick a row that doesn't intersect player or stairs
+  begin
+    row = randint(YMAX)
+  end while (row == G.py || row == G.f.sy || row == 0 || row == YMAX - 1)
+  # and a column, same deal
+  begin
+    col = randint(XMAX)
+  end while (col == G.px || col == G.f.sx || col == 0 || col == XMAX - 1)
+  # fill in the row and column
+  (0...XMAX).each do |ix|
+    G.f.tiles[xy(ix, row)] = Tile::BLOCKED
+  end
+  (0...YMAX).each do |iy|
+    G.f.tiles[xy(col, iy)] = Tile::BLOCKED
+  end
+  # open up doors in 3 walls
+  G.f.tiles[xy(randint(col), row)] = Tile::CLEAR
+  G.f.tiles[xy(col + 1 + randint(XMAX - col - 1), row)] = Tile::CLEAR
+  G.f.tiles[xy(col, randint(row))] = Tile::CLEAR
+end
+
 # creates a new floor and places the PC on it
 def newfloor
   # we're on a new floor
@@ -95,7 +125,7 @@ def newfloor
     G.f.sy = rand(YMAX)
   end until (G.px != G.f.sx && G.py != G.f.sy)
 
-  G.f.tiles.map! { Tile::CLEAR }
+  digfloor_quad
 end
 
 ## GAME LOGIC - RENDERING
